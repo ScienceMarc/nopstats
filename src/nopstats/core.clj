@@ -17,7 +17,7 @@
 (defn mean [l] (double (/ (reduce + l) (count l))))
 
 
-(def http-header {"User-Agent" "JVM:NoPStatBot:v1.2.0 (by /u/ScienceMarc_alt)"}) ;I hope this user-agent is right
+(def http-header {"User-Agent" "JVM:NoPStatBot:v1.2.1 (by /u/ScienceMarc_alt)"}) ;I hope this user-agent is right
 (try
   (def JSON (:body (client/get "https://www.reddit.com/user/SpacePaladin15/submitted/.json?limit=200" {:headers http-header})))
   (def success-type "reddit")
@@ -86,6 +86,9 @@
 
 (def omnibus (apply str (map #(:html %) nop-chapters)))
 
+(def perspective-average (sort-by :avg-words (for [pers (distinct chapter-perspectives)]
+                                               {:perspective pers :avg-words (math/round (mean (map #(% :length) (filter #(= pers (% :perspective)) chapter-stats))))})))
+
 (defn -main [& args]
   (spit "nop.json" JSON)
   (let [f (fn [lst] (str/replace (str/replace (str lst) #" " ",") #"[\[|\]]" ""))]
@@ -114,9 +117,7 @@
   (dorun
    (for [pers (frequencies chapter-perspectives)]
      (log-println (format "%s %d (%.2f%%)" (first pers) (second pers) (float (* 100 (/ (second pers) (count chapter-perspectives))))))))
-  ;TODO: Make this show up in the log
-  (pprint/print-table (sort-by :avg-words (for [pers (distinct chapter-perspectives)]
-                                            {:perspective pers :avg-words (math/round (mean (map #(% :length) (filter #(= pers (% :perspective)) chapter-stats))))})))
+  (log-println (str/replace (with-out-str (pprint/print-table perspective-average)) #"\r" ""))
   (spit "omnibus.html" omnibus)
   (log-println (count nop-chapters))
   (log-println (case success-type
