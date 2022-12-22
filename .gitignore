@@ -13,8 +13,10 @@ pom.xml.asc
 .hg/
 /.clj-kondo
 /.lsp
+/.calva
 
 /chapters
 output.txt
 *.csv
 *.json
+omnibus.*
