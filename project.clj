@@ -1,4 +1,4 @@
-(defproject nopstats "1.1.0"
+(defproject nopstats "1.2.0"
   :description "NoP stat gatherer"
   :url "http://example.com/FIXME"
   :license {:name "MIT License"
@@ -6,6 +6,7 @@
   :dependencies [
                  [org.clojure/clojure "1.11.1"]
                  [org.clojure/data.json "2.4.0"]
+                 [clj-http "3.12.3"]
                  ]
   :main ^:skip-aot nopstats.core
   :target-path "target/%s"

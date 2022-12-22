@@ -4,7 +4,8 @@
             [clojure.java.io :as io]
             [clojure.math :as math]
             [clojure.pprint :as pprint]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [clj-http.client :as client]))
 
 (spit "output.txt" "")
 (defn log-println
@@ -16,10 +17,9 @@
 (defn mean [l] (double (/ (reduce + l) (count l))))
 
 
-(System/setProperty "http.agent" (str "JVM:NoPStatBot:v" "1.1.0" " (by /u/ScienceMarc_alt)")) ;I hope this user-agent is right
-(System/setProperty "http.agent" "test")
+(def http-header {"User-Agent" "JVM:NoPStatBot:v1.2.0 (by /u/ScienceMarc_alt)"}) ;I hope this user-agent is right
 (try
-  (def JSON (slurp "https://www.reddit.com/user/SpacePaladin15/submitted/.json?limit=100"))
+  (def JSON (:body (client/get "https://www.reddit.com/user/SpacePaladin15/submitted/.json?limit=200" {:headers http-header})))
   (def success-type "reddit")
   (catch Exception _ (log-println "Reddit API is being fussy, please try again in a little bit, trying to load old data")
          (try
@@ -88,8 +88,9 @@
 
 (defn -main [& args]
   (spit "nop.json" JSON)
-  (spit "totals.csv" (str/replace (str/replace (str chapter-lengths) #" " ",") #"[\[|\]]" ""))
-  (spit "perspectives.csv" (str/replace (str/replace (str chapter-perspectives) #" " ",") #"[\[|\]\"]" ""))
+  (let [f (fn [lst] (str/replace (str/replace (str lst) #" " ",") #"[\[|\]]" ""))]
+    (spit "totals.csv" (f chapter-lengths))
+    (spit "perspectives.csv" (f chapter-perspectives)))
   ;save chapters sorted by perspective
   (dorun (for [chapter chapter-stats]
            (let [path (str "chapters/" (chapter :perspective) "/" (chapter :title))]
@@ -111,11 +112,11 @@
     (let [avg (/ total (count chapter-lengths))]
       (log-println (format "Average per chapter: %,d words (%.1f pages)\n" (int (math/round avg)) (float (/ avg words-per-page))))))
   (dorun
-     (for [pers (frequencies chapter-perspectives)]
-       (log-println (format "%s %d (%.2f%%)" (first pers) (second pers) (float (* 100 (/ (second pers) (count chapter-perspectives))))))))
+   (for [pers (frequencies chapter-perspectives)]
+     (log-println (format "%s %d (%.2f%%)" (first pers) (second pers) (float (* 100 (/ (second pers) (count chapter-perspectives))))))))
   ;TODO: Make this show up in the log
   (pprint/print-table (sort-by :avg-words (for [pers (distinct chapter-perspectives)]
-                                {:perspective pers :avg-words (math/round (mean (map #(% :length) (filter #(= pers (% :perspective)) chapter-stats))))})))
+                                            {:perspective pers :avg-words (math/round (mean (map #(% :length) (filter #(= pers (% :perspective)) chapter-stats))))})))
   (spit "omnibus.html" omnibus)
   (log-println (count nop-chapters))
   (log-println (case success-type
