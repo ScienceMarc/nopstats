@@ -5,19 +5,21 @@
             [clojure.math :as math]
             [clojure.pprint :as pprint]
             [clojure.string :as str]
-            [clj-http.client :as client]))
+            [clj-http.client :as client]
+            [clojure.instant :as inst]))
 
 (spit "output.txt" "")
 (defn log-println
   "Unfortunately, jar files don't show stdout, so this logs and prints"
   [& args]
-  (let [clean (str/replace (str/replace (str args) #"^.|.$|\"" "") #"\\n" "\n")] ;Why was it so hard to remove quotes and parentheses?
+  (let [clean (apply str args)]
     (println (str clean))
     (spit "output.txt" (str clean "\n") :append true)))
+
 (defn mean [l] (double (/ (reduce + l) (count l))))
 
 
-(def http-header {"User-Agent" "JVM:NoPStatBot:v1.2.1 (by /u/ScienceMarc_alt)"}) ;I hope this user-agent is right
+(def http-header {"User-Agent" "JVM:NoPStatBot:v1.3.0 (by /u/ScienceMarc_alt)"}) ;I hope this user-agent is right
 (try
   (def JSON (:body (client/get "https://www.reddit.com/user/SpacePaladin15/submitted/.json?limit=200" {:headers http-header})))
   (def success-type "reddit")
@@ -69,22 +71,30 @@
 
 (def chapter-lengths
   "list of chapter lengths"
-  (vec (let [texts (map :text nop-chapters)] 
-         (for [text texts] 
-           (count (re-seq #"[\w|’]+" text))))))
+  (vec (let [texts (map :text nop-chapters)]
+         (for [text texts]
+           (count (re-seq #"[\w’]+" text))))))
 
 (def chapter-perspectives
   "get the perspective of a chapter"
   (vec (for [text (map :text nop-chapters)]
-         (let [pers (vec (re-find #"\*\*\*((.+)(,| of)|(.+)).+\*\*" text))]
-           (last (str/split (or (pers 4) (pers 2)) #" "))))))
+         (let [pers (vec (re-find #"\*\*\*(?>(?>[a-zA-Z-]+ (?!of))*(\S+)(?>(?>(?> of|,).+\*\*\*)|\*\*\*))" text))]
+           (str/replace (pers 1) #"," "")))))
+
+(defn extract-date
+  [s]
+  (let [extract (first (re-seq #"((January)|(February)|(March)|(April)|(May)|(June)|(July)|(August)|(September)|(October)|(November)|(December))\s(\d{1,2}),\s(\d{4})" (str/replace s #"\*" "")))
+        month ["January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December"]]
+    (inst/read-instant-date (format "%d-%02d-%02d" (Integer/parseInt (extract 15)) (inc (.indexOf month (extract 1))) (Integer/parseInt (extract 14))))))
+
+(def dates (vec (map extract-date (map :text nop-chapters))))
 
 (def chapter-stats
   "builds a list of maps collecting each chapter's relavent information"
   (for [idx (range (count nop-chapters))]
-    (assoc (nop-chapters idx) :length (chapter-lengths idx) :perspective (chapter-perspectives idx)))) ;TODO: Add chapter dates
+    (assoc (nop-chapters idx) :length (chapter-lengths idx) :perspective (chapter-perspectives idx) :date (dates idx))))
 
-(def omnibus (apply str (map #(:html %) nop-chapters)))
+(def omnibus (apply str (map :html nop-chapters)))
 
 (def perspective-average (sort-by :avg-words (for [pers (distinct chapter-perspectives)]
                                                {:perspective pers :avg-words (math/round (mean (map #(% :length) (filter #(= pers (% :perspective)) chapter-stats))))})))
@@ -105,9 +115,9 @@
                 (spit (str path ".md") (chapter :text))
                 (spit (str path ".html") (chapter :html))))
 
-
-             (log-println (chapter :title) "-" (chapter :length) "words")
-             (log-println (chapter :perspective) "\n"))))
+             (log-println (chapter :title) " - " (chapter :length) " words")
+             (log-println (chapter :perspective))
+             (log-println (.format (java.text.SimpleDateFormat. "yyyy-MMM-dd") (chapter :date)) "\n"))))
 
   ;print out totals
   (let [total (reduce + chapter-lengths)]
