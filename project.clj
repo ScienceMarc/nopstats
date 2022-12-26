@@ -1,4 +1,4 @@
-(defproject nopstats "1.3.0"
+(defproject nopstats "1.3.1"
   :description "NoP stat gatherer"
   :url "http://example.com/FIXME"
   :license {:name "MIT License"

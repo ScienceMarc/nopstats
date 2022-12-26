@@ -19,7 +19,7 @@
 (defn mean [l] (double (/ (reduce + l) (count l))))
 
 
-(def http-header {"User-Agent" "JVM:NoPStatBot:v1.3.0 (by /u/ScienceMarc_alt)"}) ;I hope this user-agent is right
+(def http-header {"User-Agent" "JVM:NoPStatBot:v1.3.1 (by /u/ScienceMarc_alt)"}) ;I hope this user-agent is right
 (try
   (def JSON (:body (client/get "https://www.reddit.com/user/SpacePaladin15/submitted/.json?limit=200" {:headers http-header})))
   (def success-type "reddit")
@@ -73,7 +73,7 @@
   "list of chapter lengths"
   (vec (let [texts (map :text nop-chapters)]
          (for [text texts]
-           (count (re-seq #"[\w’]+" text))))))
+           (count (re-seq #"[\w’]+" (first (first (re-seq #"(?s)(\*\*)(.*)---" text)))))))))
 
 (def chapter-perspectives
   "get the perspective of a chapter"
