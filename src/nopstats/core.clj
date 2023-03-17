@@ -19,7 +19,7 @@
 (defn mean [l] (double (/ (reduce + l) (count l))))
 
 
-(def http-header {"User-Agent" "JVM:NoPStatBot:v1.3.1 (by /u/ScienceMarc_alt)"}) ;I hope this user-agent is right
+(def http-header {"User-Agent" "JVM:NoPStatBot:v1.3.2 (by /u/ScienceMarc_alt)"}) ;I hope this user-agent is right
 (try
   (def JSON (:body (client/get "https://www.reddit.com/user/SpacePaladin15/submitted/.json?limit=200" {:headers http-header})))
   (def success-type "reddit")
@@ -59,11 +59,17 @@
       title
       (str title " 1"))))
 
+(defn get-post-votes
+  "returns the number of upvotes of a given post"
+  [n]
+  (((children n) :data) :ups))
+
+
 
 (def all-posts
   "all post data as :title, :text pairs"
-  (vec (for [n (range 99 0 -1)]
-         (hash-map :title (get-post-title n) :text (get-post-text n) :html (get-post-html n)))))
+  (vec (for [n (range (dec (count children)) 0 -1)]
+         (hash-map :title (get-post-title n) :text (get-post-text n) :html (get-post-html n) :ups (get-post-votes n)))))
 
 (def nop-chapters
   "only NoP chapters"
@@ -99,6 +105,9 @@
 (def perspective-average (sort-by :avg-words (for [pers (distinct chapter-perspectives)]
                                                {:perspective pers :avg-words (math/round (mean (map #(% :length) (filter #(= pers (% :perspective)) chapter-stats))))})))
 
+(def vote-average (sort-by :avg-votes (for [pers (distinct chapter-perspectives)]
+                                        {:perspective pers :avg-votes (math/round (mean (map #(% :ups) (filter #(= pers (% :perspective)) chapter-stats))))})))
+
 (defn -main [& args]
   (spit "nop.json" JSON)
   (let [f (fn [lst] (str/replace (str/replace (str lst) #" " ",") #"[\[|\]]" ""))]
@@ -115,7 +124,7 @@
                 (spit (str path ".md") (chapter :text))
                 (spit (str path ".html") (chapter :html))))
 
-             (log-println (chapter :title) " - " (chapter :length) " words")
+             (log-println (chapter :title) " - " (chapter :length) " words (" (chapter :ups) " upvotes)")
              (log-println (chapter :perspective))
              (log-println (.format (java.text.SimpleDateFormat. "yyyy-MMM-dd") (chapter :date)) "\n"))))
 
@@ -128,6 +137,7 @@
    (for [pers (frequencies chapter-perspectives)]
      (log-println (format "%s %d (%.2f%%)" (first pers) (second pers) (float (* 100 (/ (second pers) (count chapter-perspectives))))))))
   (log-println (str/replace (with-out-str (pprint/print-table perspective-average)) #"\r" ""))
+  (log-println (str/replace (with-out-str (pprint/print-table vote-average)) #"\r" ""))
   (spit "omnibus.html" omnibus)
   (log-println (count nop-chapters))
   (log-println (case success-type
