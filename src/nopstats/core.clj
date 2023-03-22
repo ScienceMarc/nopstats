@@ -19,18 +19,14 @@
 (defn mean [l] (double (/ (reduce + l) (count l))))
 
 
-(def http-header {"User-Agent" "JVM:NoPStatBot:v1.3.2 (by /u/ScienceMarc_alt)"}) ;I hope this user-agent is right
+(def http-header {"User-Agent" "JVM:NoPStatBot:v1.4.1 (by /u/ScienceMarc_alt)"}) ;I hope this user-agent is right
 (try
-  (def JSON (:body (client/get "https://www.reddit.com/user/SpacePaladin15/submitted/.json?limit=200" {:headers http-header})))
-  (def success-type "reddit")
-  (catch Exception _ (log-println "Reddit API is being fussy, please try again in a little bit, trying to load old data")
-         (try
-           (def JSON (slurp "nop.json"))
-           (log-println "Found old data!")
-           (def success-type "cache")
-           (catch Exception _ (log-println "No old data found, you'll just have to wait and try again")))))
+  (def JSON (:body (client/get "https://www.reddit.com/user/SpacePaladin15/submitted/.json?limit=99&after=t3_11up3kn" {:headers http-header})))
+  (def JSON2 (:body (client/get "https://www.reddit.com/user/SpacePaladin15/submitted/.json?limit=100&before=t3_11rxi6k" {:headers http-header})))
+  (catch Exception _ (log-println "Reddit API failure :(\nTry again later")))
 
 (def parsed-JSON (json/read-str JSON :key-fn keyword))
+(def parsed-JSON2 (json/read-str JSON2 :key-fn keyword))
 
 ;constants
 (def words-per-page "arbitrary number of words per book page" 300)
@@ -38,7 +34,7 @@
 
 (def children
   "list of all of the metadata for user posts"
-  ((parsed-JSON :data) :children))
+  (vec (concat ((parsed-JSON2 :data) :children) ((parsed-JSON :data) :children))))
 
 (defn get-post-text
   "returns the selftext of a given post"
@@ -109,7 +105,6 @@
                                         {:perspective pers :avg-votes (math/round (mean (map #(% :ups) (filter #(= pers (% :perspective)) chapter-stats))))})))
 
 (defn -main [& args]
-  (spit "nop.json" JSON)
   (let [f (fn [lst] (str/replace (str/replace (str lst) #" " ",") #"[\[|\]]" ""))]
     (spit "totals.csv" (f chapter-lengths))
     (spit "perspectives.csv" (f chapter-perspectives)))
@@ -139,7 +134,4 @@
   (log-println (str/replace (with-out-str (pprint/print-table perspective-average)) #"\r" ""))
   (log-println (str/replace (with-out-str (pprint/print-table vote-average)) #"\r" ""))
   (spit "omnibus.html" omnibus)
-  (log-println (count nop-chapters))
-  (log-println (case success-type
-                 "reddit" "✅ - Data up to date"
-                 "cache" "⛔ - Out of date")))
+  (log-println (count nop-chapters)))
