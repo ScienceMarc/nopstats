@@ -19,7 +19,7 @@
 (defn mean [l] (double (/ (reduce + l) (count l))))
 
 
-(def http-header {"User-Agent" "JVM:NoPStatBot:v1.4.1 (by /u/ScienceMarc_alt)"}) ;I hope this user-agent is right
+(def http-header {"User-Agent" "JVM:NoPStatBot:v1.4.2 (by /u/ScienceMarc_alt)"}) ;I hope this user-agent is right
 (try
   (def JSON (:body (client/get "https://www.reddit.com/user/SpacePaladin15/submitted/.json?limit=99&after=t3_11up3kn" {:headers http-header})))
   (def JSON2 (:body (client/get "https://www.reddit.com/user/SpacePaladin15/submitted/.json?limit=100&before=t3_11rxi6k" {:headers http-header})))
