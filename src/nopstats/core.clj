@@ -32,25 +32,25 @@
 (def words-per-page "arbitrary number of words per book page" 300)
 (def dune-word-count "estimated number of words in dune" 188000)
 
-(def children
+(def data
   "list of all of the metadata for user posts"
-  (filterv #(="HFY" (:subreddit (:data %))) (concat ((parsed-JSON2 :data) :children) ((parsed-JSON :data) :children))))
+  (mapv :data (filterv #(="HFY" (:subreddit (:data %))) (concat ((parsed-JSON2 :data) :children) ((parsed-JSON :data) :children)))))
 
 (defn get-post-text
   "returns the selftext of a given post"
   [n]
-  (((children n) :data) :selftext))
+  ((data n) :selftext))
 
 (defn get-post-html
   "returns the selftext in HTML of a given post"
   [n]
   ;TODO: Clean this up properly
-  (str/replace (str/replace (str/replace (str/replace (str/replace (((children n) :data) :selftext_html) #"&gt;" ">") #"&lt;" "<") #"quot;" "“") #"#39;" "’") #"&amp;" ""))
+  (str/replace (str/replace (str/replace (str/replace (str/replace ((data n) :selftext_html) #"&gt;" ">") #"&lt;" "<") #"quot;" "“") #"#39;" "’") #"&amp;" ""))
 
 (defn get-post-title
   "returns the post title (adding a 1 if the post doesn't end in a number)"
   [n]
-  (let [title (((children n) :data) :title)]
+  (let [title ((data n) :title)]
     (if (re-matches #"\d" (str (last (seq title))))
       title
       (str title " 1"))))
@@ -58,13 +58,13 @@
 (defn get-post-votes
   "returns the number of upvotes of a given post"
   [n]
-  (((children n) :data) :ups))
+  ((data n) :ups))
 
 
 
 (def all-posts
   "all post data as :title, :text pairs"
-  (vec (for [n (range (dec (count children)) 0 -1)]
+  (vec (for [n (range (dec (count data)) 0 -1)]
          (hash-map :title (get-post-title n) :text (get-post-text n) :html (get-post-html n) :ups (get-post-votes n)))))
 
 (def nop-chapters
