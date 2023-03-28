@@ -10,7 +10,7 @@ You can clone the repo and build it with leiningen yourself if you want to make 
 Either way, you are going to need the Java runtime installed, which hopefully should be the case for most computers.
 
 ## Usage
-The simplest way to use to program is to download and run `nopstats-1.4.1-standalone.jar` from the releases tab. The program will try to connect to the reddit API, and it will also generate a file called `output.txt` that will contain all of the relevant stats the script collects.
+The simplest way to use to program is to download and run `nopstats-1.4.2-standalone.jar` from the releases tab. The program will try to connect to the reddit API, and it will also generate a file called `output.txt` that will contain all of the relevant stats the script collects.
 
 If successful, it will create several files in the local directory:
 
@@ -26,7 +26,7 @@ If successful, it will create several files in the local directory:
 
 To run the script from the terminal:
 
-    $ java -jar nopstats-1.4.1-standalone.jar [ags]
+    $ java -jar nopstats-1.4.2-standalone.jar [ags]
 |Argument|Effect|
 |-|-|
 |`-md` | Only output in markdown format |
