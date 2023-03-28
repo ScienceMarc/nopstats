@@ -34,7 +34,7 @@
 
 (def children
   "list of all of the metadata for user posts"
-  (vec (concat ((parsed-JSON2 :data) :children) ((parsed-JSON :data) :children))))
+  (filterv #(="HFY" (:subreddit (:data %))) (concat ((parsed-JSON2 :data) :children) ((parsed-JSON :data) :children))))
 
 (defn get-post-text
   "returns the selftext of a given post"
